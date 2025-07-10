@@ -1,7 +1,6 @@
 #![no_std]
 #![no_main]
 
-use defmt::info;
 use embassy_executor::Spawner;
 use embassy_futures::join::join4;
 use embassy_time::{Duration, Timer};
@@ -40,24 +39,12 @@ async fn main(_spawner: Spawner) {
     let stack_resources = mk_static!(FoAResources, FoAResources::new());
     println!("[LOG] FoA resources created, initializing WiFi...");
     
-    #[cfg(not(feature = "esp32c6"))]
+    println!("[LOG] Calling foa::init...");
     let ([mut sta_vif, ..], mut foa_runner) = foa::init(
         stack_resources,
         peripherals.WIFI,
-        peripherals.RADIO_CLK,
-        peripherals.ADC2,
     );
-    #[cfg(feature = "esp32c6")]
-    let ([mut sta_vif, ..], mut foa_runner) = {
-        println!("[LOG] Calling foa::init for ESP32-C6...");
-        let result = foa::init(
-            stack_resources,
-            peripherals.WIFI,
-            peripherals.RADIO_CLK,
-        );
-        println!("[LOG] foa::init completed for ESP32-C6");
-        result
-    };
+    println!("[LOG] foa::init completed");
     
     println!("[LOG] WiFi stack initialized, creating STA interface...");
     let sta_resources = mk_static!(StaResources, StaResources::default());

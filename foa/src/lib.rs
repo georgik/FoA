@@ -32,9 +32,7 @@ use embassy_sync::{
     channel::{Channel, DynamicReceiver},
 };
 use esp_config::esp_config_int;
-use esp_hal::peripherals::{RADIO_CLK, WIFI};
-#[cfg(not(feature = "esp32c6"))]
-use esp_hal::peripherals::ADC2;
+use esp_hal::peripherals::WIFI;
 
 use esp_wifi_hal::{WiFiResources, RxFilterBank, ScanningMode, WiFi};
 
@@ -144,77 +142,22 @@ impl<'res> VirtualInterface<'res> {
 }
 
 /// Initialise FoA.
-#[cfg(not(feature = "esp32c6"))]
 pub fn init<'res>(
     resources: &'res mut FoAResources,
-    wifi: WIFI,
-    radio_clock:  RADIO_CLK<'static>,
-    adc2: ADC2,
+    wifi_peripheral: WIFI,
 ) -> ([VirtualInterface<'res>; WiFi::INTERFACE_COUNT], FoARunner<'res>) {
-    // This is for all transmutes here.
-    // # SAFETY:
-    // We do this only to avoid self referential structs. All of the destination lifetimes are the
-    // lifetime of the resources struct and therefore valid.
-    let wifi = WiFi::new(wifi, radio_clock, adc2, &mut resources.wifi_resources);
-    init_common(resources, wifi)
-}
-
-/// Initialise FoA for ESP32-C6 (without ADC2).
-#[cfg(feature = "esp32c6")]
-pub fn init<'res>(
-    resources: &'res mut FoAResources,
-    wifi: WIFI,
-    radio_clock:  RADIO_CLK<'static>,
-) -> ([VirtualInterface<'res>; WiFi::INTERFACE_COUNT], FoARunner<'res>) {
-    // This is for all transmutes here.
-    // # SAFETY:
-    // We do this only to avoid self referential structs. All of the destination lifetimes are the
-    // lifetime of the resources struct and therefore valid.
-    let wifi = WiFi::new(wifi, radio_clock, &mut resources.wifi_resources);
-    extern "C" {
-        fn phy_set_most_tpw(power: u8);
-    }
-    unsafe {
-        phy_set_most_tpw(84);
-    }
-    let shared_lmac_state = resources
-        .shared_lmac_state
-        .insert(SharedLMacState::new(wifi));
-    let tx_buffer_manager = resources
-        .tx_buffer_manager
-        .insert(unsafe { TxBufferManager::new(&mut resources.tx_buffers) });
-    let (lmac_receive_endpoint, lmac_interface_controls) =
-        shared_lmac_state.split(tx_buffer_manager.dyn_tx_buffer_manager());
-    let rx_queue_senders =
-        array::from_fn(|i| unsafe { mem::transmute(resources.rx_queues[i].dyn_sender()) });
-    let virtual_interfaces =
-        lmac_interface_controls.map(|lmac_interface_control| VirtualInterface {
-            rx_queue_receiver: unsafe {
-                mem::transmute::<
-                    DynamicReceiver<'_, ReceivedFrame<'static>>,
-                    DynamicReceiver<'_, ReceivedFrame<'_>>,
-                >(
-                    resources.rx_queues[lmac_interface_control.get_filter_interface()]
-                        .dyn_receiver(),
-                )
-            },
-            interface_control: lmac_interface_control,
-        });
-    (
-        virtual_interfaces,
-        FoARunner {
-            lmac_receive_endpoint,
-            rx_queue_senders,
-            #[cfg(feature = "arc_buffers")]
-            rx_arc_pool: &resources.arc_pool,
-        },
-    )
+    init_common(resources, wifi_peripheral)
 }
 
 fn init_common<'res>(
     resources: &'res mut FoAResources,
-    wifi: WiFi<'res>,
+    wifi_peripheral: WIFI,
 ) -> ([VirtualInterface<'res>; WiFi::INTERFACE_COUNT], FoARunner<'res>) {
+    // This is for all transmutes here.
+    // # SAFETY:
+    // We do this only to avoid self referential structs. All of the destination lifetimes are the
+    // lifetime of the resources struct and therefore valid.
+    let wifi = WiFi::new(wifi_peripheral, &mut resources.wifi_resources);
     extern "C" {
         fn phy_set_most_tpw(power: u8);
     }
