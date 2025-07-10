@@ -1,0 +1,34 @@
+[workspace]
+members = [
+    "foa",
+    "foa_sta", 
+    "foa_awdl",
+    "examples",
+    "esp32c6_wifi_test",
+]
+resolver = "2"
+
+[workspace.dependencies]
+# Unified dependency versions to avoid conflicts
+scroll = "0.13.0"
+mac-parser = "0.2.0"
+llc-rs = "0.1.3"
+ethernet = { version = "0.1.6", default-features = false }
+ether-type = "0.1.5"
+ieee80211 = { version = "0.5.7", default-features = false, features = ["crypto"] }
+awdl-frame-parser = "0.4.1"
+
+[profile.dev]
+# Rust debug is too slow.
+# For debug builds always builds with some optimization
+opt-level = "s"
+
+[profile.release]
+codegen-units = 1        # LLVM can perform better optimizations using a single thread
+debug = 2
+debug-assertions = false
+incremental = false
+lto = 'fat'
+opt-level = 's'
+overflow-checks = false
+

@@ -7,8 +7,10 @@ edition = "2021"
 embassy-sync = "0.7.0"
 embassy-futures = "0.1.1"
 
-esp-hal = "1.0.0-beta.1"
-esp-wifi-hal = "0.1.1"
+esp-hal = { path = "../../esp-hal/esp-hal" }
+esp32c6 = { path = "../../esp-pacs/esp32c6", optional = true }
+esp-wifi = { path = "../../esp-hal/esp-wifi", optional = true }
+esp-wifi-hal = { path = "../../esp-wifi-hal/esp-wifi-hal" }
 static_cell = "2.1.0"
 critical-section = "1.2.0"
 portable-atomic = "1.10.0"
@@ -16,7 +18,7 @@ esp-config = "0.4.0"
 defmt-or-log = { version = "0.2.1", default-features = false }
 defmt = { version = "1.0.1", optional = true }
 embassy-time = "0.4.0"
-ieee80211 = { version = "0.5.6", default-features = false }
+ieee80211 = { workspace = true }
 heapless = "0.8.0"
 
 [build-dependencies]
@@ -30,3 +32,4 @@ defmt = ["dep:defmt", "defmt-or-log/defmt", "esp-wifi-hal/defmt"]
 
 esp32 = ["esp-hal/esp32", "esp-wifi-hal/esp32"]
 esp32s2 = ["esp-hal/esp32s2", "esp-wifi-hal/esp32s2"]
+esp32c6 = ["esp-hal/esp32c6", "dep:esp32c6", "dep:esp-wifi", "esp-wifi/esp32c6", "esp-wifi/wifi", "esp-wifi-hal/esp32c6"]

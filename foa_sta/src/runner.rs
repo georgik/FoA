@@ -15,7 +15,7 @@ use foa::{
 };
 use ieee80211::{
     common::{DataFrameSubtype, FCFFlags, FrameType, SequenceControl},
-    data_frame::{header::DataFrameHeader, DataFrame, DataFrameReadPayload},
+    data_frame::{header::DataFrameHeader, DataFrame},
     mac_parser::MACAddress,
     match_frames,
     mgmt_frame::{BeaconFrame, DeauthenticationFrame},
@@ -262,7 +262,7 @@ impl RoutingRunner<'_, '_> {
     /// Forward a received data frame to higher layers.
     fn handle_data_rx(
         rx_runner: &mut RxRunner<'_, MTU>,
-        data_frame: DataFrame<'_, DataFrameReadPayload<'_>>,
+        data_frame: DataFrame<'_, &[u8]>,
         connection_state: &ConnectionStateTracker,
     ) {
         // (Frostie314159) NOTE: This is extremely ugly.
@@ -275,7 +275,7 @@ impl RoutingRunner<'_, '_> {
         let Some(source_address) = data_frame.header.source_address() else {
             return;
         };
-        let Some(DataFrameReadPayload::Single(payload)) = data_frame.payload else {
+        let Some(payload) = data_frame.payload else {
             return;
         };
         // The body of every data frame contains a logical link control (LLC) frame, as specified
